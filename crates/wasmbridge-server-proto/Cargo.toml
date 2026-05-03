@@ -1,0 +1,28 @@
+[package]
+name = "wasmbridge-server-proto"
+version = "0.1.0"
+edition = "2024"
+[dependencies]
+tonic = { workspace = true, features = [
+	"tls",
+	"server",
+] }
+prost = { workspace = true }
+tokio = { workspace = true, features = [
+	"full",
+] }
+tokio-stream = { workspace = true }
+async-trait = { workspace = true }
+dashmap = "6.1.0"
+serde = { workspace = true }
+serde_json = { workspace = true }
+rcgen = "0.13"
+jsonwebtoken = { version = "10.1", features = [
+	"rust_crypto",
+] }
+chrono = { workspace = true }
+rustls = { workspace = true }
+tonic-web = "0.12"
+[build-dependencies]
+tonic-build = { workspace = true }
+protoc-bin-vendored = { workspace = true }

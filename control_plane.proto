@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package control_plane;
+
+// Control plane service implementing the Reverse Push architecture.
+service ControlPlane {
+  // Bi-directional stream. The client connects and holds the connection open.
+  // The client sends ClientEvent messages (registration, heartbeats, responses).
+  // The server sends CloudCommand messages (commands to execute).
+  rpc StreamCommands(stream ClientEvent) returns (stream CloudCommand);
+}
+
+// Events sent by the client (behind NAT) to the cloud.
+message ClientEvent {
+  oneof event {
+    RegistrationRequest register = 1;
+    Heartbeat ping = 2;
+    CommandResponse response = 3;
+    LogMessage log = 4;
+    TokenRefresh refresh = 5;
+  }
+}
+
+// Registration request sent upon stream establishment.
+message RegistrationRequest {
+  string client_id = 1;
+  string version = 2;
+}
+
+message Heartbeat {
+  int64 timestamp = 1;
+}
+
+// Token refresh during an active stream session.
+message TokenRefresh {
+  string new_jwt = 1;
+}
+
+// Response to a completed command.
+message CommandResponse {
+  string command_id = 1;
+  bool success = 2;
+  bytes data = 3; // Optional payload data returned by the plugin.
+  string error_message = 4;
+}
+
+message LogMessage {
+  string level = 1;
+  string message = 2;
+}
+
+// Commands pushed by the cloud to the client.
+message CloudCommand {
+  string command_id = 1;
+  oneof command {
+    ExecutePluginAction execute_plugin = 2;
+    UpdateConfiguration update_config = 3;
+    RestartService restart = 4;
+  }
+}
+
+// Command to execute an action inside a WASM plugin.
+message ExecutePluginAction {
+  string target_plugin = 1;
+  string action = 2;
+  bytes payload = 3; // Payload for the plugin.
+}
+
+// Command to update the agent's configuration.
+message UpdateConfiguration {
+  bytes config_payload = 1;
+}
+
+// Command to restart the service.
+message RestartService {
+  int32 delay_seconds = 1;
+}

@@ -1,0 +1,33 @@
+[package]
+name = "bridge-protocol"
+version = "0.0.1"
+authors = [
+    "WasmBridge Team",
+]
+license = "MIT"
+edition = "2024"
+repository = "https://github.com/wasmbrigde/bridge-protocol"
+[workspace]
+members = [
+    "crates/*",
+]
+resolver = "2"
+[workspace.dependencies]
+tonic = { version = "0.12.3", features = [
+    "tls",
+] }
+prost = "0.13.1"
+tokio = { version = "1.52.1" }
+tokio-stream = "0.1.18"
+serde = { version = "1.0", features = [
+    "derive",
+] }
+serde_json = "1.0"
+rustls = { version = "0.23", features = [
+    "ring",
+] }
+chrono = "0.4"
+async-trait = "0.1"
+# Build dependencies
+tonic-build = "0.12.3"
+protoc-bin-vendored = "3.0"

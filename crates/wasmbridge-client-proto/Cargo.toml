@@ -1,0 +1,23 @@
+[package]
+name = "wasmbridge-client-proto"
+version = "0.1.0"
+edition = "2024"
+[dependencies]
+tonic = { workspace = true, features = [
+	"tls",
+] }
+prost = { workspace = true }
+tokio = { workspace = true, features = [
+	"macros",
+	"rt-multi-thread",
+	"sync",
+	"time",
+] }
+tokio-stream = { workspace = true }
+rustls = { workspace = true }
+[build-dependencies]
+tonic-build = { workspace = true }
+protoc-bin-vendored = { workspace = true }
+[[bin]]
+name = "mock_server"
+path = "src/bin/mock_server.rs"
