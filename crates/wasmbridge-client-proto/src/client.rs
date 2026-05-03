@@ -153,6 +153,11 @@ async fn run_connection_loop(
     let max_backoff = Duration::from_secs(60);
 
     loop {
+        // Check if the host has already dropped the client before attempting to connect
+        if rx_events.is_closed() {
+             return;
+        }
+
         match connect_to_server(
             &endpoint_url,
             keep_alive,
@@ -169,7 +174,6 @@ async fn run_connection_loop(
                     handle_bi_di_stream(client, &client_id, &mut rx_events, &tx_commands).await;
 
                 if !should_reconnect {
-                    eprintln!("[ReversePush] Host channel closed, terminating connection loop");
                     return;
                 }
             }
@@ -181,9 +185,20 @@ async fn run_connection_loop(
             }
         }
 
-        // Wait before attempting to reconnect
-        sleep(backoff).await;
-        backoff = std::cmp::min(backoff * 2, max_backoff);
+        // Wait before attempting to reconnect, but be interruptible if the client is dropped
+        tokio::select! {
+            _ = sleep(backoff) => {
+                backoff = std::cmp::min(backoff * 2, max_backoff);
+            }
+            _ = rx_events.recv() => {
+                // If we receive None, the channel is closed, so we should terminate.
+                // If we receive Some, it's an event we can't send yet, but it means the channel is still open.
+                // However, the fact that rx_events.recv() returned means we are awake.
+                if rx_events.is_closed() {
+                    return;
+                }
+            }
+        }
     }
 }
 
