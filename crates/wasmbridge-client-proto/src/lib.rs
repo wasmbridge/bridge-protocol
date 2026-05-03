@@ -13,3 +13,19 @@ pub mod control_plane {
 pub mod client;
 
 pub use client::{ReversePushBuilder, ReversePushClient};
+
+pub mod exports {
+    pub use prost;
+    pub use tonic;
+    pub use tonic::{Code, Request, Response, Status};
+
+    pub mod transport {
+        pub use tonic::transport::{Certificate, Channel, ClientTlsConfig, Endpoint};
+    }
+}
+
+pub mod prelude {
+    pub use crate::client::{ReversePushBuilder, ReversePushClient};
+    pub use crate::exports::transport::*;
+    pub use crate::exports::*;
+}

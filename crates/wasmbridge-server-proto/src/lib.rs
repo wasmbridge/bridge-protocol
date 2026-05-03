@@ -3,6 +3,28 @@ pub mod cert;
 pub mod registry;
 pub mod server;
 
+pub mod exports {
+    pub use async_trait;
+    pub use jsonwebtoken;
+    pub use prost;
+    pub use tonic;
+    pub use tonic::{Code, Request, Response, Status};
+
+    pub mod transport {
+        pub use tonic::transport::{Identity, Server, ServerTlsConfig};
+    }
+}
+
+pub mod prelude {
+    pub use crate::auth::*;
+    pub use crate::exports::transport::*;
+    pub use crate::exports::*;
+    pub use crate::{Claims, CloudHandle, CloudServerBuilder, ConnectionEvent, TokenValidator};
+    pub use crate::control_plane;
+    pub use jsonwebtoken;
+    pub use async_trait::async_trait;
+}
+
 pub mod control_plane {
     tonic::include_proto!("control_plane");
 }
