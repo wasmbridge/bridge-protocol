@@ -1,7 +1,7 @@
+use crate::control_plane::{CloudCommand, CommandResponse};
 use dashmap::DashMap;
 use tokio::sync::{mpsc, oneshot};
 use tonic::Status;
-use crate::control_plane::{CloudCommand, CommandResponse};
 
 use std::collections::VecDeque;
 use std::time::Instant;
@@ -32,28 +32,44 @@ impl ClientRegistry {
     }
 
     pub fn register(&self, client_id: String, sender: CommandSender) {
-        let anon_id = if client_id.len() > 8 { &client_id[..8] } else { &client_id };
+        let anon_id = if client_id.len() > 8 {
+            &client_id[..8]
+        } else {
+            &client_id
+        };
         println!("[CloudBridge] Registering client: {}...", anon_id);
         self.clients.insert(client_id.clone(), sender.clone());
         self.last_seen.insert(client_id.clone(), Instant::now());
-        
+
         // Flush pending commands
         if let Some((_, mut queue)) = self.pending_commands.remove(&client_id) {
-            println!("[CloudBridge] Flushing {} pending commands for {}", queue.len(), client_id);
+            println!(
+                "[CloudBridge] Flushing {} pending commands for {}",
+                queue.len(),
+                client_id
+            );
             while let Some(cmd) = queue.pop_front() {
                 let _ = sender.try_send(Ok(cmd));
             }
         }
 
-        let _ = self.event_tx.send(crate::ConnectionEvent::Connected(client_id));
+        let _ = self
+            .event_tx
+            .send(crate::ConnectionEvent::Connected(client_id));
     }
 
     pub fn unregister(&self, client_id: &str) {
-        let anon_id = if client_id.len() > 8 { &client_id[..8] } else { &client_id };
+        let anon_id = if client_id.len() > 8 {
+            &client_id[..8]
+        } else {
+            &client_id
+        };
         println!("[CloudBridge] Unregistering client: {}...", anon_id);
         self.last_seen.remove(client_id);
         if self.clients.remove(client_id).is_some() {
-            let _ = self.event_tx.send(crate::ConnectionEvent::Disconnected(client_id.to_string()));
+            let _ = self
+                .event_tx
+                .send(crate::ConnectionEvent::Disconnected(client_id.to_string()));
         }
     }
 
@@ -63,7 +79,8 @@ impl ClientRegistry {
 
     pub fn evict_stale_clients(&self, timeout: std::time::Duration) {
         let now = Instant::now();
-        let stale_ids: Vec<String> = self.last_seen
+        let stale_ids: Vec<String> = self
+            .last_seen
             .iter()
             .filter(|kv| now.duration_since(*kv.value()) > timeout)
             .map(|kv| kv.key().clone())
@@ -77,10 +94,16 @@ impl ClientRegistry {
 
     pub async fn send_command(&self, client_id: &str, command: CloudCommand) -> Result<(), String> {
         if let Some(sender) = self.clients.get(client_id) {
-            sender.send(Ok(command)).await.map_err(|e| format!("Failed to send: {}", e))
+            sender
+                .send(Ok(command))
+                .await
+                .map_err(|e| format!("Failed to send: {}", e))
         } else {
             // Queue command for offline client
-            println!("[CloudBridge] Client {} offline, queueing command", client_id);
+            println!(
+                "[CloudBridge] Client {} offline, queueing command",
+                client_id
+            );
             self.pending_commands
                 .entry(client_id.to_string())
                 .or_insert_with(VecDeque::new)
@@ -89,12 +112,16 @@ impl ClientRegistry {
         }
     }
 
-    pub async fn send_command_await(&self, client_id: &str, command: CloudCommand) -> Result<CommandResponse, String> {
+    pub async fn send_command_await(
+        &self,
+        client_id: &str,
+        command: CloudCommand,
+    ) -> Result<CommandResponse, String> {
         let (tx, rx) = oneshot::channel();
         let cmd_id = command.command_id.clone();
-        
+
         self.pending_responses.insert(cmd_id.clone(), tx);
-        
+
         if let Err(e) = self.send_command(client_id, command).await {
             self.pending_responses.remove(&cmd_id);
             return Err(e);

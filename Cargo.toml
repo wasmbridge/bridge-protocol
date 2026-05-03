@@ -1,17 +1,30 @@
-[package]
-name = "bridge-protocol"
+[workspace]
+members = [
+    "crates/*",
+]
+resolver = "2"
+[workspace.package]
 version = "0.0.1"
 authors = [
     "WasmBridge Team",
 ]
 license = "MIT"
 edition = "2024"
-repository = "https://github.com/wasmbrigde/bridge-protocol"
-[workspace]
-members = [
-    "crates/*",
-]
-resolver = "2"
+repository = "https://github.com/wasmbridge/bridge-protocol"
+[profile.dev]
+opt-level = 0
+debug = true
+[profile.dev.package."*"]
+opt-level = 3
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
+[profile.dist]
+inherits = "release"
+lto = "thin"
 [workspace.dependencies]
 tonic = { version = "0.12.3", features = [
     "tls",
@@ -28,6 +41,5 @@ rustls = { version = "0.23", features = [
 ] }
 chrono = "0.4"
 async-trait = "0.1"
-# Build dependencies
 tonic-build = "0.12.3"
 protoc-bin-vendored = "3.0"

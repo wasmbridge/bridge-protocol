@@ -1,7 +1,14 @@
 [package]
 name = "wasmbridge-server-proto"
-version = "0.1.0"
+version = "0.0.1"
+authors = [
+	"WasmBridge Team",
+]
+license = "MIT"
 edition = "2024"
+[lib]
+name = "wasmbridge_server_proto"
+path = "src/lib.rs"
 [dependencies]
 tonic = { workspace = true, features = [
 	"tls",

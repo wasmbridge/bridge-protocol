@@ -1,10 +1,10 @@
+use crate::control_plane::control_plane_server::ControlPlane;
+use crate::control_plane::{ClientEvent, CloudCommand, client_event};
+use crate::registry::ClientRegistry;
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status, Streaming};
-use crate::control_plane::control_plane_server::ControlPlane;
-use crate::control_plane::{ClientEvent, CloudCommand, client_event};
-use crate::registry::ClientRegistry;
 
 pub struct CloudControlPlane {
     pub registry: Arc<ClientRegistry>,
@@ -22,7 +22,9 @@ impl ControlPlane for CloudControlPlane {
         // Извлекаем токен из метаданных
         let token = match request.metadata().get("authorization") {
             Some(t) => {
-                let s = t.to_str().map_err(|_| Status::unauthenticated("Invalid token format"))?;
+                let s = t
+                    .to_str()
+                    .map_err(|_| Status::unauthenticated("Invalid token format"))?;
                 if s.starts_with("Bearer ") {
                     &s[7..]
                 } else {
@@ -45,7 +47,7 @@ impl ControlPlane for CloudControlPlane {
         let (tx, rx) = mpsc::channel(100);
         let registry = self.registry.clone();
         let validator = self.validator.clone();
-        
+
         // Переменная для хранения ID клиента после его регистрации
         let mut current_client_id = String::new();
         let mut hardware_id_from_token = claims.sub.clone();
@@ -61,16 +63,26 @@ impl ControlPlane for CloudControlPlane {
                         client_event::Event::Register(reg) => {
                             // Верификация hardware_id (client_id) против токена
                             if reg.client_id != hardware_id_from_token {
-                                println!("[CloudServer] Security Alert! client_id mismatch: '{}' vs token '{}'", reg.client_id, hardware_id_from_token);
+                                println!(
+                                    "[CloudServer] Security Alert! client_id mismatch: '{}' vs token '{}'",
+                                    reg.client_id, hardware_id_from_token
+                                );
                                 break; // Close connection
                             }
 
                             current_client_id = reg.client_id.clone();
                             registry.register(reg.client_id, tx.clone());
-                            
+
                             // Анонимизированный лог
-                            let anonymized_id = if current_client_id.len() > 8 { &current_client_id[..8] } else { &current_client_id };
-                            println!("[CloudServer] Client '{}...' registered (version: {})", anonymized_id, reg.version);
+                            let anonymized_id = if current_client_id.len() > 8 {
+                                &current_client_id[..8]
+                            } else {
+                                &current_client_id
+                            };
+                            println!(
+                                "[CloudServer] Client '{}...' registered (version: {})",
+                                anonymized_id, reg.version
+                            );
                         }
                         client_event::Event::Ping(_hb) => {
                             registry.update_activity(&current_client_id);
@@ -79,10 +91,15 @@ impl ControlPlane for CloudControlPlane {
                             // Обновление токена в процессе работы
                             if let Some(new_claims) = validator.validate(&refresh.new_jwt).await {
                                 if new_claims.sub == hardware_id_from_token {
-                                    println!("[CloudServer] Token refreshed for client {}", current_client_id);
+                                    println!(
+                                        "[CloudServer] Token refreshed for client {}",
+                                        current_client_id
+                                    );
                                     hardware_id_from_token = new_claims.sub;
                                 } else {
-                                    println!("[CloudServer] Token refresh failed: hardware_id mismatch");
+                                    println!(
+                                        "[CloudServer] Token refresh failed: hardware_id mismatch"
+                                    );
                                 }
                             }
                         }
@@ -90,17 +107,23 @@ impl ControlPlane for CloudControlPlane {
                             registry.complete_command(resp);
                         }
                         client_event::Event::Log(log) => {
-                            println!("[CloudServer] Log from {}: [{}] {}", current_client_id, log.level, log.message);
+                            println!(
+                                "[CloudServer] Log from {}: [{}] {}",
+                                current_client_id, log.level, log.message
+                            );
                         }
                     }
                 }
             }
-            
+
             // Если цикл завершился, удаляем клиента из реестра
             if !current_client_id.is_empty() {
                 registry.unregister(&current_client_id);
             }
-            println!("[CloudServer] Connection closed for client '{}'", current_client_id);
+            println!(
+                "[CloudServer] Connection closed for client '{}'",
+                current_client_id
+            );
         });
 
         Ok(Response::new(ReceiverStream::new(rx)))

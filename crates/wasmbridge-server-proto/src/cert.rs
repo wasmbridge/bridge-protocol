@@ -1,5 +1,5 @@
-use std::path::PathBuf;
 use std::fs;
+use std::path::PathBuf;
 
 pub struct CertPaths {
     pub cert: PathBuf,
@@ -35,7 +35,7 @@ pub fn ensure_certificates() -> Result<CertPaths, Box<dyn std::error::Error + Se
             "localhost".to_string(),
             "127.0.0.1".to_string(),
         ])?;
-        
+
         fs::write(&paths.cert, cert.cert.pem())?;
         fs::write(&paths.key, cert.key_pair.serialize_pem())?;
         println!("[CloudBridge] Certificates saved to: {:?}", paths.cert);

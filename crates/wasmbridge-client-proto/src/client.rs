@@ -17,7 +17,7 @@ use crate::control_plane::{
 
 /// Builder for creating a configured [`ReversePushClient`].
 ///
-/// Use this builder to set the endpoint, client identifier, keep-alive 
+/// Use this builder to set the endpoint, client identifier, keep-alive
 /// settings, and authentication parameters (JWT and TLS) before establishing
 /// the connection to the control plane.
 pub struct ReversePushBuilder {
@@ -96,7 +96,10 @@ impl ReversePushBuilder {
             .await;
         });
 
-        Ok(ReversePushClient { tx_events, rx_commands })
+        Ok(ReversePushClient {
+            tx_events,
+            rx_commands,
+        })
     }
 }
 
@@ -124,9 +127,9 @@ impl ReversePushClient {
         new_jwt: String,
     ) -> Result<(), mpsc::error::SendError<ClientEvent>> {
         let refresh_event = ClientEvent {
-            event: Some(client_event::Event::Refresh(crate::control_plane::TokenRefresh {
-                new_jwt,
-            })),
+            event: Some(client_event::Event::Refresh(
+                crate::control_plane::TokenRefresh { new_jwt },
+            )),
         };
         self.send_event(refresh_event).await
     }
@@ -150,8 +153,13 @@ async fn run_connection_loop(
     let max_backoff = Duration::from_secs(60);
 
     loop {
-        match connect_to_server(&endpoint_url, keep_alive, jwt_token.clone(), tls_config.clone())
-            .await
+        match connect_to_server(
+            &endpoint_url,
+            keep_alive,
+            jwt_token.clone(),
+            tls_config.clone(),
+        )
+        .await
         {
             Ok(client) => {
                 println!("[ReversePush] Connected to {}", endpoint_url);
@@ -166,7 +174,10 @@ async fn run_connection_loop(
                 }
             }
             Err(e) => {
-                eprintln!("[ReversePush] Connection failed: {}. Retrying in {:?}...", e, backoff);
+                eprintln!(
+                    "[ReversePush] Connection failed: {}. Retrying in {:?}...",
+                    e, backoff
+                );
             }
         }
 
@@ -225,7 +236,7 @@ impl tonic::service::Interceptor for TokenInterceptor {
 }
 
 /// Handles the bi-directional gRPC stream loop.
-/// 
+///
 /// Returns `true` if a reconnection is required (e.g., due to a network error or the server closing the stream).
 /// Returns `false` if the host application disconnected its channels, indicating the loop should terminate gracefully.
 async fn handle_bi_di_stream<S>(

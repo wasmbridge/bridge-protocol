@@ -2136,7 +2136,7 @@ dependencies = [
 
 [[package]]
 name = "wasmbridge-client-proto"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "prost",
  "protoc-bin-vendored",
@@ -2149,7 +2149,7 @@ dependencies = [
 
 [[package]]
 name = "wasmbridge-server-proto"
-version = "0.1.0"
+version = "0.0.1"
 dependencies = [
  "async-trait",
  "chrono",
