@@ -1,0 +1,27 @@
+[graph]
+all-features = true
+[advisories]
+ignore = [
+]
+[licenses]
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "BSD-3-Clause",
+    "ISC",
+    "Zlib",
+    "CC0-1.0",
+    "Unicode-DFS-2016",
+    "BSL-1.0",
+    "OpenSSL",
+]
+confidence-threshold = 0.8
+[bans]
+multiple-versions = "warn"
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-git = [
+    "https://github.com/wasmbrigde/wintray",
+    "https://github.com/wasmbridge/bridge-protocol",
+]
